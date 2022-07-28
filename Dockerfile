@@ -9,7 +9,7 @@ ENV USER=serviceuser
 RUN adduser -D $USER
 USER $USER
 
-WORKDIR /app/
+WORKDIR /app
 COPY ./hello.sh hello.sh
 
 ENTRYPOINT [ "sh" ]
