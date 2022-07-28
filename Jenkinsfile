@@ -2,8 +2,8 @@ pipeline {
   agent any
   
   parameters {
-    booleanParam(name: 'runDefault', defaultValue: true, description: 'If this checked: Hello World!'
-    string(name: 'UserNameToPrint', defaultValue: '', description: 'If this specified and runDefault is false: Hello <NAME>!'    
+    booleanParam(name: 'runDefault', defaultValue: true, description: 'If this checked: Hello World!')
+    string(name: 'UserNameToPrint', defaultValue: '', description: 'If this specified and runDefault is false: Hello <NAME>!')    
   
   stages {
     stage('Docker Build') {
@@ -24,7 +24,7 @@ pipeline {
       steps {
           withKubeConfig([credentialsId: 'kubeconfig']) {
           sh 'helm install --set name="" hello ./hello'
-          sh 'kubectl logs'
+          sh 'kubectl logs ... > ....'
         }
       }
   }
