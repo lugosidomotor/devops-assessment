@@ -2,21 +2,19 @@ pipeline {
 
   agent any
 
+  parameters {
+    string(name: 'branchToBuild', defaultValue: 'main', description: 'Branch to build')
+    booleanParam(name: 'runDefault', defaultValue: true, description: 'If this checked: Hello World!')
+    string(name: 'userNameToPrint', defaultValue: '', description: 'If this specified and runDefault is false: Hello <NAME>!')
+    string(name: 'dockerImageVersion', defaultValue: 'latest', description: 'Docker image\'s version to deploy')
+    string(name: 'clusterToDeploy', defaultValue: 'docker-desktop', description: 'Kubernetes cluster\'s name to deploy')
+  }
+  
   environment {
     def gitRepo = 'https://github.com/lugosidomotor/devops-assessment.git'
     def dockerImage = 'hello'
     def dockerRepository = 'ldomotor'
   }
-
-  parameters {
-    string(name: 'branchToBuild', defaultValue: 'main', description: 'Branch to build')
-    booleanParam(name: 'runDefault', defaultValue: true, description: 'If this checked: Hello World!')
-    string(name: 'UserNameToPrint', defaultValue: '', description: 'If this specified and runDefault is false: Hello <NAME>!')
-    string(name: 'dockerImageVersion', defaultValue: 'latest', description: 'Docker image\'s version to deploy')
-    string(name: 'clusterToDeploy', defaultValue: 'docker-desktop', description: 'Kubernetes cluster\'s name to deploy')
-  }
-  
-//if default --> usernameToPrint = ''
 
   stages {      
     stage('Checkout Source') {
@@ -28,7 +26,14 @@ pipeline {
     stage('Docker Build') {
       steps {
         script {
-          sh "docker build --build-arg username='${params.UserNameToPrint}' -t ${env.dockerRepository}/${env.dockerImage}:${env.BUILD_NUMBER} -t ${env.dockerRepository}/${env.dockerImage}:latest ."
+          sh """
+            set -x
+            if [ ${params.runDefault} = true ]; then
+              docker build -t ${env.dockerRepository}/${env.dockerImage}:${env.BUILD_NUMBER} -t ${env.dockerRepository}/${env.dockerImage}:latest .
+            else
+              docker build --build-arg username='${params.userNameToPrint}' -t ${env.dockerRepository}/${env.dockerImage}:${env.BUILD_NUMBER} -t ${env.dockerRepository}/${env.dockerImage}:latest .
+            fi
+            """.stripIndent()
         }
       }
     }
