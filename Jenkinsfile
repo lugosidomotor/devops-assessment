@@ -7,7 +7,7 @@ pipeline {
     booleanParam(name: 'runDefault', defaultValue: true, description: 'If this checked: Hello World!')
     string(name: 'userNameToPrint', defaultValue: '', description: 'If this specified and runDefault is false: Hello <NAME>!')
     string(name: 'dockerImageVersion', defaultValue: 'latest', description: 'Docker image\'s version to deploy')
-    string(name: 'clusterToDeploy', defaultValue: 'docker-desktop', description: 'Kubernetes cluster\'s name to deploy')
+    choice(name: 'clusterToDeploy', choices: ['docker-desktop'], description: 'Kubernetes cluster\'s name to deploy')
   }
   
   environment {
