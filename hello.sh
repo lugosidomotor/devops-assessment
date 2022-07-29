@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [[ -z "${USERNAME}" ]]; then
-  echo "Hello Word!"
+  echo "Hello World!"
 else
   echo "Hello $USERNAME!"
 fi
