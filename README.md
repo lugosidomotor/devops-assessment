@@ -1,3 +1,11 @@
+# Proof
+![alt text](https://i.imgur.com/BYziAwE.png)
+
+# Requirements for agent
+- kubectl
+- helm
+- docker
+
 # Devops assessment
 Implement a containerized application, Helm chart to deploy the application to a K8s cluster, and a Jenkins pipeline to build and run it.
 
