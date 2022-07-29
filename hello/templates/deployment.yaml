@@ -14,4 +14,4 @@ spec:
     spec:
       containers:
         - name: hello
-          image: ldomotor/hello:{{  .Values.dockerImageVersion | default "latest" | quote}}
+          image: ldomotor/hello:{{  .Values.dockerImageVersion | default "latest"  }}
