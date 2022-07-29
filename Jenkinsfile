@@ -12,8 +12,12 @@ pipeline {
     string(name: 'branchToBuild', defaultValue: 'main', description: 'Branch to build')
     booleanParam(name: 'runDefault', defaultValue: true, description: 'If this checked: Hello World!')
     string(name: 'UserNameToPrint', defaultValue: '', description: 'If this specified and runDefault is false: Hello <NAME>!')
+    string(name: 'dockerImageVersion', defaultValue: 'latest', description: 'Docker image\'s version to deploy')
+    string(name: 'clusterToDeploy', defaultValue: 'docker-desktop', description: 'Kubernetes cluster\'s name to deploy')
   }
   
+//if default --> usernameToPrint = ''
+
   stages {
       
     stage('Checkout Source') {
@@ -51,7 +55,7 @@ pipeline {
     stage('Kubernetes Config') {
       steps {
         script {
-          withCredentials([file(credentialsId: 'kubeconfig', variable: 'kubeconfig')]) {
+          withCredentials([file(credentialsId: "${params.clusterToDeploy}-kubeconfig", variable: 'kubeconfig')]) {
             sh "cp \$kubeconfig /tmp/config"
           }
         }
@@ -62,7 +66,8 @@ pipeline {
       steps {
         script {
           withEnv(["KUBECONFIG=/tmp/config"]) {
-            sh "helm install --set name=${params.UserNameToPrint} hello ./hello"
+            sh "helm delete hello"
+            sh "helm install --set dockerImageVersion=${params.dockerImageVersion} hello ./hello"
           }
         }
       }
@@ -72,19 +77,20 @@ pipeline {
       steps {
         script {
           withEnv(["KUBECONFIG=/tmp/config"]) {
-            sh "..."
+            sh "echo 'Waiting for container creation...' && sleep 20"
+            sh "for pod in \$(kubectl get po --output=jsonpath={.items..metadata.name}); do kubectl logs \$pod; done > docker-logs.txt"
+            archiveArtifacts artifacts: 'docker-logs.txt'
           }
         }
       }
     }
+  }
 
 post {
   always {
     cleanWs notFailBuild: true
-    //TODO
-    //delete kubeconfig
-    //delete docker images
-    //implement default
+    sh "rm -rf /tmp/config"
+    sh "docker system prune -a -f"    
   }
 }
 }
