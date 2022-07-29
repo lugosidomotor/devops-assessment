@@ -14,9 +14,4 @@ spec:
     spec:
       containers:
         - name: hello
-          image: alpine:latest
-          env:
-          - name: NAME
-            value: {{  .Values.name | default "World" | quote}}
-          command: ["/bin/echo"]
-          args: ["Hello $(NAME)!"]
+          image: ldomotor/hello:{{  .Values.dockerImageVersion | default "latest" | quote}}
