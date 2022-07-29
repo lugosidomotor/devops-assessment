@@ -18,8 +18,7 @@ pipeline {
   
 //if default --> usernameToPrint = ''
 
-  stages {
-      
+  stages {      
     stage('Checkout Source') {
       steps {
         git branch: params.branchToBuild, url: gitRepo
