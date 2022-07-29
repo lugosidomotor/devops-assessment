@@ -70,7 +70,7 @@ pipeline {
       steps {
         script {
           withEnv(["KUBECONFIG=/tmp/config"]) {
-            sh "helm delete hello"
+            sh "helm delete hello || true"
             sh "helm install --set dockerImageVersion=${params.dockerImageVersion} hello ./hello"
           }
         }
