@@ -96,7 +96,7 @@ post {
     sh "rm -rf /tmp/config"
     sh "docker system prune -a -f"
     script {
-      currentBuild.description = "Message: ${txtContent}\nDocker image: ldomotor/hello:${dockerTag}"
+      currentBuild.description = "Message: ${txtContent}\nDocker image: ${env.dockerRepository}/${env.dockerImage}:${dockerTag}"
     }
   }
 }
