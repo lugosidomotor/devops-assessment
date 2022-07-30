@@ -61,7 +61,7 @@ pipeline {
     stage('Helm Deploy') {
       steps {
         withEnv(["KUBECONFIG=/tmp/config"]) {
-          sh "helm upgrade --install --force --wait --set dockerImageVersion=${params.dockerImageVersion} hello ./hello"
+          sh "helm upgrade --install --force --set dockerImageVersion=${params.dockerImageVersion} hello ./hello"
         }
       }
     }
