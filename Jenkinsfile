@@ -14,25 +14,35 @@ pipeline {
     def gitRepo = 'https://github.com/lugosidomotor/devops-assessment.git'
     def dockerImage = 'hello'
     def dockerRepository = 'ldomotor'
+    def gitCommit = ''
+    def shortCommit = ''
+    def txtContent = ''
   }
 
   stages {      
     stage('Checkout Source') {
       steps {
-        git branch: params.branchToBuild, url: gitRepo
+        script {
+          git branch: params.branchToBuild, url: gitRepo
+          gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+          shortCommit = gitCommit.take(6)
+        }
       }
     }
 
     stage('Docker Build') {
       steps {
-        sh """
-          set -x
-          if [ ${params.runDefault} = true ]; then
-            docker build -t ${env.dockerRepository}/${env.dockerImage}:${env.BUILD_NUMBER} -t ${env.dockerRepository}/${env.dockerImage}:latest .
-          else
-            docker build --build-arg username='${params.userNameToPrint}' -t ${env.dockerRepository}/${env.dockerImage}:${env.BUILD_NUMBER} -t ${env.dockerRepository}/${env.dockerImage}:latest .
-          fi
+        script {
+          dockerTag = "${env.BUILD_NUMBER}-${shortCommit}"
+          sh """
+            set -x
+            if [ ${params.runDefault} = true ]; then
+              docker build -t ${env.dockerRepository}/${env.dockerImage}:${dockerTag} -t ${env.dockerRepository}/${env.dockerImage}:latest .
+            else
+              docker build --build-arg username='${params.userNameToPrint}' -t ${env.dockerRepository}/${env.dockerImage}:${dockerTag} -t ${env.dockerRepository}/${env.dockerImage}:latest .
+            fi
           """
+        }
       }
     }
 
@@ -69,9 +79,12 @@ pipeline {
     stage('Collect Container Logs') {
       steps {
         withEnv(["KUBECONFIG=/tmp/config"]) {
-          sh "echo 'Waiting for container creation...' && sleep 10"
-          sh "for pod in \$(kubectl get po --output=jsonpath={.items..metadata.name}); do kubectl logs \$pod; done > docker-logs.txt"
-          archiveArtifacts artifacts: 'docker-logs.txt'
+          script {
+            sh "echo 'Waiting for container creation...' && sleep 10"
+            sh "for pod in \$(kubectl get po --output=jsonpath={.items..metadata.name}); do kubectl logs \$pod; done > docker-logs.txt"
+            archiveArtifacts artifacts: 'docker-logs.txt'          
+            txtContent = sh(returnStdout: true, script: 'cat docker-logs.txt').trim()
+          }
         }
       }
     }
@@ -81,7 +94,10 @@ post {
   always {
     cleanWs notFailBuild: true
     sh "rm -rf /tmp/config"
-    sh "docker system prune -a -f"    
+    sh "docker system prune -a -f"
+    script {
+      currentBuild.description = "Message: ${txtContent}\nDocker image: ldomotor/hello:${dockerTag}"
+    }
   }
 }
 }
