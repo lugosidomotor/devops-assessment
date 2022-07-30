@@ -1,5 +1,5 @@
 # Proof
-![alt text](https://i.imgur.com/BYziAwE.png)
+![alt text](https://i.imgur.com/rE0yDWf.png)
 
 # Requirements for agent
 - kubectl
