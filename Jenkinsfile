@@ -61,8 +61,7 @@ pipeline {
     stage('Helm Deploy') {
       steps {
         withEnv(["KUBECONFIG=/tmp/config"]) {
-          sh "helm delete hello || true"
-          sh "helm install --set dockerImageVersion=${params.dockerImageVersion} hello ./hello"
+          sh "helm upgrade --install --force --wait --set dockerImageVersion=${params.dockerImageVersion} hello ./hello"
         }
       }
     }
@@ -70,7 +69,6 @@ pipeline {
     stage('Collect Container Logs') {
       steps {
         withEnv(["KUBECONFIG=/tmp/config"]) {
-          sh "echo 'Waiting for container creation...' && sleep 20"
           sh "for pod in \$(kubectl get po --output=jsonpath={.items..metadata.name}); do kubectl logs \$pod; done > docker-logs.txt"
           archiveArtifacts artifacts: 'docker-logs.txt'
         }
