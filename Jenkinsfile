@@ -69,6 +69,7 @@ pipeline {
     stage('Collect Container Logs') {
       steps {
         withEnv(["KUBECONFIG=/tmp/config"]) {
+          sh "echo 'Waiting for container creation...' && sleep 10"
           sh "for pod in \$(kubectl get po --output=jsonpath={.items..metadata.name}); do kubectl logs \$pod; done > docker-logs.txt"
           archiveArtifacts artifacts: 'docker-logs.txt'
         }
