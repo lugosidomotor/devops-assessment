@@ -36,7 +36,6 @@ pipeline {
     def dockerRepository = 'ldomotor'
     def gitCommit = ''
     def shortCommit = ''
-    def txtContent = ''
   }
 
   stages {      
