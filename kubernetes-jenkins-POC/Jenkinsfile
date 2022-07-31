@@ -21,13 +21,14 @@ pipeline {
         '''
     }
   }
-
+  
   parameters {
-    string(name: 'branchToBuild', defaultValue: 'main', description: 'Branch to build')
     booleanParam(name: 'runDefault', defaultValue: true, description: 'If this checked: Hello World!')
     string(name: 'userNameToPrint', defaultValue: '', description: 'If this specified and runDefault is false: Hello <NAME>!')
-    string(name: 'dockerImageVersion', defaultValue: 'latest', description: 'Docker image\'s version to deploy')
     choice(name: 'clusterToDeploy', choices: ['docker-desktop'], description: 'Kubernetes cluster\'s name to deploy')
+    string(name: 'helmReleaseName', defaultValue: 'hello', description: 'Helm release name')
+    string(name: 'dockerImageVersion', defaultValue: 'latest', description: 'Docker image\'s version to deploy')
+    string(name: 'branchToBuild', defaultValue: 'main', description: 'Branch to build')
   }
   
   environment {
@@ -36,6 +37,7 @@ pipeline {
     def dockerRepository = 'ldomotor'
     def gitCommit = ''
     def shortCommit = ''
+    def txtContent = ''
   }
 
   stages {      
@@ -52,55 +54,45 @@ pipeline {
     stage('Docker Build') {
       steps {
         script {
-          container('helm-agent') {
-            dockerTag = "${env.BUILD_NUMBER}-${shortCommit}"
-            sh """
-              set -x
-              if [ ${params.runDefault} = true ]; then
-                docker build -t ${env.dockerRepository}/${env.dockerImage}:${dockerTag} -t ${env.dockerRepository}/${env.dockerImage}:latest .
-              else
-                docker build --build-arg username='${params.userNameToPrint}' -t ${env.dockerRepository}/${env.dockerImage}:${dockerTag} -t ${env.dockerRepository}/${env.dockerImage}:latest .
-              fi
-            """
-          }
+          dockerTag = "${env.BUILD_NUMBER}-${shortCommit}"
+          sh """
+            set -x
+            if [ ${params.runDefault} = true ]; then
+              docker build -t ${env.dockerRepository}/${env.dockerImage}:${dockerTag} -t ${env.dockerRepository}/${env.dockerImage}:latest .
+            else
+              docker build --build-arg username='${params.userNameToPrint}' -t ${env.dockerRepository}/${env.dockerImage}:${dockerTag} -t ${env.dockerRepository}/${env.dockerImage}:latest .
+            fi
+          """
         }
       }
     }
 
     stage('Docker Login') {
       steps {
-          container('helm-agent') {
-            withCredentials([usernamePassword(credentialsId: 'dockerHub', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUser')]) {
-              sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
-          }
+        withCredentials([usernamePassword(credentialsId: 'dockerHub', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUser')]) {
+          sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPassword}"
         }
       }
     }
 
     stage('Docker Push') {
       steps {
-        container('helm-agent') {
-          sh "docker image push --all-tags ${env.dockerRepository}/${env.dockerImage}"
-        }
+        sh "docker image push --all-tags ${env.dockerRepository}/${env.dockerImage}"
       }
     }
-    
+
     stage('Helm Deploy') {
       steps {
-        container('helm-agent') {
-          withCredentials([file(credentialsId: "${params.clusterToDeploy}-kubeconfig", variable: 'kubeconfig')]) {
-            sh "cp \$kubeconfig /tmp/config"
-            sh "export 'KUBECONFIG=/tmp/config' && helm upgrade --install --force --set dockerImageVersion=${params.dockerImageVersion} hello ./hello"
-          }
+        withCredentials([file(credentialsId: "${params.clusterToDeploy}-kubeconfig", variable: 'KUBECONFIG')]) {
+          sh "helm upgrade --install --force --set dockerImageVersion=${params.dockerImageVersion} --set name=${params.helmReleaseName} ${params.helmReleaseName} ./helm"
         }
       }
     }
-  }
 
 post {
   always {
     script {
-      currentBuild.description = "Docker image: ${env.dockerRepository}/${env.dockerImage}:${dockerTag}"
+      currentBuild.description = "Docker image: ${env.dockerRepository}/${env.dockerImage}:${dockerTag}\nHelm release: ${params.helmReleaseName}"
     }
   }
 }
