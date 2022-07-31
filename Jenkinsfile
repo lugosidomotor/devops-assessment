@@ -6,6 +6,7 @@ pipeline {
     booleanParam(name: 'runDefault', defaultValue: true, description: 'If this checked: Hello World!')
     string(name: 'userNameToPrint', defaultValue: '', description: 'If this specified and runDefault is false: Hello <NAME>!')
     choice(name: 'clusterToDeploy', choices: ['docker-desktop'], description: 'Kubernetes cluster\'s name to deploy')
+    string(name: 'helmReleaseName', defaultValue: 'hello', description: 'Helm release name')
     string(name: 'dockerImageVersion', defaultValue: 'latest', description: 'Docker image\'s version to deploy')
     string(name: 'branchToBuild', defaultValue: 'main', description: 'Branch to build')
   }
@@ -63,7 +64,7 @@ pipeline {
     stage('Helm Deploy') {
       steps {
         withCredentials([file(credentialsId: "${params.clusterToDeploy}-kubeconfig", variable: 'KUBECONFIG')]) {
-          sh "helm upgrade --install --force --set dockerImageVersion=${params.dockerImageVersion} hello ./hello"
+          sh "helm upgrade --install --force --set dockerImageVersion=${params.dockerImageVersion} --set name=${params.helmReleaseName} ${params.helmReleaseName} ./helm"
         }
       }
     }
@@ -84,10 +85,10 @@ pipeline {
 
 post {
   always {
-    cleanWs notFailBuild: true
+    cleanWs deleteDirs: true
     sh "docker system prune -a -f"
     script {
-      currentBuild.description = "Message: ${txtContent}\nDocker image: ${env.dockerRepository}/${env.dockerImage}:${dockerTag}"
+      currentBuild.description = "Message: ${txtContent}\nDocker image: ${env.dockerRepository}/${env.dockerImage}:${dockerTag}\nHelm release: ${params.helmReleaseName}"
     }
   }
 }
