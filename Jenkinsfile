@@ -16,6 +16,7 @@ pipeline {
     def dockerRepository = 'ldomotor'
     def gitCommit = ''
     def shortCommit = ''
+    def currentDir = ''
     def txtContent = ''
   }
 
@@ -26,6 +27,7 @@ pipeline {
           git branch: params.branchToBuild, url: gitRepo
           gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
           shortCommit = gitCommit.take(6)
+          currentDir = sh(returnStdout: true, script: 'pwd').trim()
         }
       }
     }
@@ -63,14 +65,14 @@ pipeline {
     stage('Kubernetes Config') {
       steps {
         withCredentials([file(credentialsId: "${params.clusterToDeploy}-kubeconfig", variable: 'kubeconfig')]) {
-          sh "cp \$kubeconfig /tmp/config"
+          sh "cp \$kubeconfig ./config"
         }
       }
     }
     
     stage('Helm Deploy') {
       steps {
-        withEnv(["KUBECONFIG=/tmp/config"]) {
+        withEnv(["KUBECONFIG=${currentDir}/config"]) {
           sh "helm upgrade --install --force --set dockerImageVersion=${params.dockerImageVersion} hello ./hello"
         }
       }
@@ -78,7 +80,7 @@ pipeline {
 
     stage('Collect Container Logs') {
       steps {
-        withEnv(["KUBECONFIG=/tmp/config"]) {
+        withEnv(["KUBECONFIG=${currentDir}/config"]) {
           script {
             sh "echo 'Waiting for container creation...' && sleep 10"
             sh "for pod in \$(kubectl get po --output=jsonpath={.items..metadata.name}); do kubectl logs \$pod; done > docker-logs.txt"
@@ -93,7 +95,6 @@ pipeline {
 post {
   always {
     cleanWs notFailBuild: true
-    sh "rm -rf /tmp/config"
     sh "docker system prune -a -f"
     script {
       currentBuild.description = "Message: ${txtContent}\nDocker image: ${env.dockerRepository}/${env.dockerImage}:${dockerTag}"
