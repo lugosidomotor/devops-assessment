@@ -3,11 +3,11 @@ pipeline {
   agent any
 
   parameters {
-    string(name: 'branchToBuild', defaultValue: 'main', description: 'Branch to build')
     booleanParam(name: 'runDefault', defaultValue: true, description: 'If this checked: Hello World!')
     string(name: 'userNameToPrint', defaultValue: '', description: 'If this specified and runDefault is false: Hello <NAME>!')
-    string(name: 'dockerImageVersion', defaultValue: 'latest', description: 'Docker image\'s version to deploy')
     choice(name: 'clusterToDeploy', choices: ['docker-desktop'], description: 'Kubernetes cluster\'s name to deploy')
+    string(name: 'dockerImageVersion', defaultValue: 'latest', description: 'Docker image\'s version to deploy')
+    string(name: 'branchToBuild', defaultValue: 'main', description: 'Branch to build')
   }
   
   environment {
